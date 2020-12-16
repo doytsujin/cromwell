@@ -59,6 +59,8 @@ object ActionUtils {
                           deLocalization: List[Action],
                           monitoringSetup: List[Action],
                           monitoringShutdown: List[Action],
+                          checkpointingStart: List[Action],
+                          checkpointingShutdown: List[Action],
                           sshAccess: List[Action],
                           isBackground: Action => Boolean,
                          ): List[Action] = {
@@ -67,6 +69,6 @@ object ActionUtils {
       case (action, _) => isBackground(action)
     })
 
-    sshAccess ++ containerSetup ++ monitoringSetup ++ sortedActions ++ monitoringShutdown
+    sshAccess ++ containerSetup ++ monitoringSetup ++ checkpointingStart ++ sortedActions ++ monitoringShutdown ++ checkpointingShutdown
   }
 }

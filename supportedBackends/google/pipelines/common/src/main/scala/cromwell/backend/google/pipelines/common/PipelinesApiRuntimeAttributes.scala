@@ -49,7 +49,8 @@ final case class PipelinesApiRuntimeAttributes(cpu: Int Refined Positive,
                                                failOnStderr: Boolean,
                                                continueOnReturnCode: ContinueOnReturnCode,
                                                noAddress: Boolean,
-                                               googleLegacyMachineSelection: Boolean)
+                                               googleLegacyMachineSelection: Boolean,
+                                               checkpointFile: Option[String])
 
 object PipelinesApiRuntimeAttributes {
 
@@ -74,12 +75,17 @@ object PipelinesApiRuntimeAttributes {
   val CpuPlatformKey = "cpuPlatform"
   private val cpuPlatformValidationInstance = new StringRuntimeAttributesValidation(CpuPlatformKey).optional
 
+  val CheckpointFileKey = "checkpointFile"
+  private val checkpointValidationInstance = new StringRuntimeAttributesValidation(CheckpointFileKey).optional
+
   private val MemoryDefaultValue = "2048 MB"
 
   private def cpuValidation(runtimeConfig: Option[Config]): RuntimeAttributesValidation[Int Refined Positive] = CpuValidation.instance
     .withDefault(CpuValidation.configDefaultWomValue(runtimeConfig) getOrElse CpuValidation.defaultMin)
 
   private def cpuPlatformValidation(runtimeConfig: Option[Config]): OptionalRuntimeAttributesValidation[String] = cpuPlatformValidationInstance
+
+  private def checkpointFileValidation(runtimeConfig: Option[Config]): OptionalRuntimeAttributesValidation[String] = checkpointValidationInstance
 
   private def cpuMinValidation(runtimeConfig: Option[Config]):RuntimeAttributesValidation[Int Refined Positive] = CpuValidation.instanceMin
     .withDefault(CpuValidation.configDefaultWomValue(runtimeConfig) getOrElse CpuValidation.defaultMin)
@@ -155,6 +161,7 @@ object PipelinesApiRuntimeAttributes {
       bootDiskSizeValidation(runtimeConfig),
       noAddressValidation(runtimeConfig),
       cpuPlatformValidation(runtimeConfig),
+      checkpointValidationInstance,
       dockerValidation,
       outDirMinValidation,
       tmpDirMinValidation,
@@ -165,6 +172,7 @@ object PipelinesApiRuntimeAttributes {
   def apply(validatedRuntimeAttributes: ValidatedRuntimeAttributes, runtimeAttrsConfig: Option[Config], googleLegacyMachineSelection: Boolean = false): PipelinesApiRuntimeAttributes = {
     val cpu: Int Refined Positive = RuntimeAttributesValidation.extract(cpuValidation(runtimeAttrsConfig), validatedRuntimeAttributes)
     val cpuPlatform: Option[String] = RuntimeAttributesValidation.extractOption(cpuPlatformValidation(runtimeAttrsConfig).key, validatedRuntimeAttributes)
+    val checkpointFile: Option[String] = RuntimeAttributesValidation.extractOption(checkpointValidationInstance.key, validatedRuntimeAttributes)
 
     // GPU
     lazy val gpuType: Option[GpuType] = RuntimeAttributesValidation.extractOption(gpuTypeValidation(runtimeAttrsConfig).key, validatedRuntimeAttributes)
@@ -209,7 +217,8 @@ object PipelinesApiRuntimeAttributes {
       failOnStderr,
       continueOnReturnCode,
       noAddress,
-      googleLegacyMachineSelection
+      googleLegacyMachineSelection,
+      checkpointFile
     )
   }
 }

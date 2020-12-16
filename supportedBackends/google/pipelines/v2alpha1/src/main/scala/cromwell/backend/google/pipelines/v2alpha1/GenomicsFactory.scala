@@ -102,6 +102,8 @@ case class GenomicsFactory(applicationName: String, authMode: GoogleAuthMode, en
           deLocalization = deLocalization,
           monitoringSetup = monitoringSetup,
           monitoringShutdown = monitoringShutdown,
+          checkpointingStart = List.empty,
+          checkpointingShutdown = List.empty,
           sshAccess = sshAccess,
           isBackground =
             action =>
