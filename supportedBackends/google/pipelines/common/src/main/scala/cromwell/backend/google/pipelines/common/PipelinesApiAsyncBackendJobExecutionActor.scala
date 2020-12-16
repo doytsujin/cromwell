@@ -469,7 +469,8 @@ class PipelinesApiAsyncBackendJobExecutionActor(override val standardParams: Sta
           new CheckpointingConfiguration(
             jobDescriptor = jobDescriptor,
             workflowPaths = workflowPaths,
-            commandDirectory = commandDirectory
+            commandDirectory = commandDirectory,
+            runtimeAttributes = runtimeAttributes
           )
 
         val enableSshAccess = workflowOptions.getBoolean(WorkflowOptionKeys.EnableSSHAccess).toOption.contains(true)

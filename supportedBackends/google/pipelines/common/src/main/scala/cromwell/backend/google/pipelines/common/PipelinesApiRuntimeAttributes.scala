@@ -85,8 +85,6 @@ object PipelinesApiRuntimeAttributes {
 
   private def cpuPlatformValidation(runtimeConfig: Option[Config]): OptionalRuntimeAttributesValidation[String] = cpuPlatformValidationInstance
 
-  private def checkpointFileValidation(runtimeConfig: Option[Config]): OptionalRuntimeAttributesValidation[String] = checkpointValidationInstance
-
   private def cpuMinValidation(runtimeConfig: Option[Config]):RuntimeAttributesValidation[Int Refined Positive] = CpuValidation.instanceMin
     .withDefault(CpuValidation.configDefaultWomValue(runtimeConfig) getOrElse CpuValidation.defaultMin)
 
