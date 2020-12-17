@@ -1,25 +1,25 @@
-package cromwell.backend.google.pipelines.v2beta.api
+package cromwell.backend.google.pipelines.v2alpha1.api
 
-import com.google.api.services.lifesciences.v2beta.model.{Action, Mount}
+import com.google.api.services.genomics.v2alpha1.model.{Action, Mount}
 import cromwell.backend.google.pipelines.common.api.PipelinesApiRequestFactory.CreatePipelineParameters
-import cromwell.backend.google.pipelines.v2beta.LifeSciencesFactory
+import cromwell.backend.google.pipelines.v2alpha1.GenomicsFactory
+import scala.collection.JavaConverters._
 
 trait CheckpointingAction {
   def checkpointingSetupActions(createPipelineParameters: CreatePipelineParameters,
                                 mounts: List[Mount]
                             ): List[Action] =
     createPipelineParameters.runtimeAttributes.checkpointFile map { checkpointFile =>
-      val checkpointingImage = LifeSciencesFactory.CloudSdkImage
+      val checkpointingImage = GenomicsFactory.CloudSdkImage
       val checkpointingCommand = createPipelineParameters.checkpointingConfiguration.checkpointingCommand(checkpointFile)
       val checkpointingEnvironment = Map.empty[String, String]
-
 
       val initialCheckpointSyncAction = ActionBuilder.monitoringAction(
         checkpointingImage,
         createPipelineParameters.checkpointingConfiguration.localizePreviousCheckpointCommand(checkpointFile),
         checkpointingEnvironment,
         mounts
-      ).setRunInBackground(false)
+      ).setFlags(List.empty[String].asJava)
       val describeInitialCheckpointingSyncAction = ActionBuilder.describeDocker("initial checkpointing sync", initialCheckpointSyncAction)
 
       val backgroundCheckpointingAction = ActionBuilder.monitoringAction(
@@ -33,7 +33,7 @@ trait CheckpointingAction {
       List(describeInitialCheckpointingSyncAction, initialCheckpointSyncAction, describeBackgroundCheckpointingAction, backgroundCheckpointingAction)
     } getOrElse(List.empty)
 
-  def checkpointingShutdownActions(createPipelineParameters: CreatePipelineParameters): List[Action] = {
+  def checkpointingShutdownActions(createPipelineParameters: CreatePipelineParameters): List[Action] =
     createPipelineParameters.runtimeAttributes.checkpointFile match {
       case Some(_) =>
         val terminationAction = ActionBuilder.monitoringTerminationAction()
@@ -43,5 +43,4 @@ trait CheckpointingAction {
         List(describeTerminationAction, terminationAction)
       case None => Nil
     }
-  }
 }
