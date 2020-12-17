@@ -40,7 +40,7 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
         s"while true; do " +
         s"gsutil -m cp $local $cloud-tmp && " +
         s"gsutil -m mv $cloud-tmp $cloud && " +
-        "sleep 10; done"
+        "sleep 600; done"
     )
   }
 }
