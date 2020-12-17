@@ -69,6 +69,6 @@ object ActionUtils {
       case (action, _) => isBackground(action)
     })
 
-    sshAccess ++ containerSetup ++ monitoringSetup ++ checkpointingStart ++ sortedActions ++ monitoringShutdown ++ checkpointingShutdown
+    sshAccess ++ containerSetup ++ monitoringSetup ++ checkpointingStart ++ sortedActions ++ checkpointingShutdown ++ monitoringShutdown
   }
 }
