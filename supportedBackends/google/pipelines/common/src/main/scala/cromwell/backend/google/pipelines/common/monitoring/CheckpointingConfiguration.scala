@@ -19,15 +19,11 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
     commandDirectory.resolve(checkpointFileName).toAbsolutePath.pathAsString
   }
 
-  def localizePreviousCheckpointCommand(checkpointFileName: String): List[String] = {
+  def localizePreviousCheckpointCommand(checkpointFileName: String): String = {
     val local = checkpointFileLocal(checkpointFileName)
     val cloud = checkpointFileCloud(checkpointFileName)
-    List(
-      "/bin/sh",
-      "-c",
-      s"echo 'Syncing from checkpoint $cloud' && " +
-        s"gsutil cp $cloud $local || touch $local"
-    )
+
+      s"gsutil cp $cloud $local || mkdir -p $$(dirname $local) && touch $local"
   }
 
   def checkpointingCommand(checkpointFileName: String): List[String] = {
