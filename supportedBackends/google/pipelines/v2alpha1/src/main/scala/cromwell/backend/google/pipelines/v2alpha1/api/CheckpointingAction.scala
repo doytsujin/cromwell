@@ -15,7 +15,7 @@ trait CheckpointingAction {
 
       val initialCheckpointSyncAction = ActionBuilder.cloudSdkShellAction(
         createPipelineParameters.checkpointingConfiguration.localizePreviousCheckpointCommand(checkpointFile)
-      )()
+      )(mounts = mounts)
       val describeInitialCheckpointingSyncAction = ActionBuilder.describeDocker("initial checkpointing sync", initialCheckpointSyncAction)
 
       val backgroundCheckpointingAction = ActionBuilder.backgroundAction(

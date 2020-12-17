@@ -101,7 +101,6 @@ object ActionBuilder {
 
   def gcsFileDeletionAction(cloudPath: String): Action =
     cloudSdkShellAction(s"gsutil rm $cloudPath")(labels = Map(Key.Tag -> Value.Monitoring))
-      .withAlwaysRun(true)
       .withIgnoreExitStatus(true)
 
   def userAction(docker: String,

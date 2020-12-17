@@ -8,11 +8,10 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
                                        workflowPaths: WorkflowPaths,
                                        commandDirectory: Path
                                       ) {
-
   def checkpointFileCloud(checkpointFileName: String): String = {
     // Fix the attempt at 1 because we always use the base directory to store the checkpoint file.
     workflowPaths.toJobPaths(jobDescriptor.key.copy(attempt = 1), jobDescriptor.workflowDescriptor)
-      .callExecutionRoot.resolve(checkpointFileName).toAbsolutePath.pathAsString
+      .callExecutionRoot.resolve("__checkpointing").resolve(checkpointFileName).toAbsolutePath.pathAsString
   }
 
   def checkpointFileLocal(checkpointFileName: String): String = {
@@ -23,7 +22,7 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
     val local = checkpointFileLocal(checkpointFileName)
     val cloud = checkpointFileCloud(checkpointFileName)
 
-      s"gsutil cp $cloud $local || mkdir -p $$(dirname $local) && touch $local"
+    s"gsutil cp $cloud $local || touch $local"
   }
 
   def checkpointingCommand(checkpointFileName: String): List[String] = {

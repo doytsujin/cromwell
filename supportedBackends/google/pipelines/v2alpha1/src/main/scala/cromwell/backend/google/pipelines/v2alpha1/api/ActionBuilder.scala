@@ -100,7 +100,7 @@ object ActionBuilder {
 
   def gcsFileDeletionAction(cloudPath: String): Action =
     cloudSdkShellAction(s"gsutil rm $cloudPath")(
-      flags = List(ActionFlag.AlwaysRun, ActionFlag.IgnoreExitStatus),
+      flags = List(ActionFlag.IgnoreExitStatus),
       labels = Map(Key.Tag -> Value.Monitoring)
     )
 
