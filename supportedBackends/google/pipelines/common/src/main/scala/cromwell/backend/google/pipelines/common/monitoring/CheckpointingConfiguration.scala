@@ -1,6 +1,7 @@
 package cromwell.backend.google.pipelines.common.monitoring
 
 import cromwell.backend.BackendJobDescriptor
+import cromwell.backend.google.pipelines.common.CheckpointingAttributes
 import cromwell.backend.io.WorkflowPaths
 import cromwell.core.path.Path
 
@@ -25,9 +26,9 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
     s"gsutil cp $cloud $local || touch $local"
   }
 
-  def checkpointingCommand(checkpointFileName: String): List[String] = {
-    val local = checkpointFileLocal(checkpointFileName)
-    val cloud = checkpointFileCloud(checkpointFileName)
+  def checkpointingCommand(checkpointingAttributes: CheckpointingAttributes): List[String] = {
+    val local = checkpointFileLocal(checkpointingAttributes.file)
+    val cloud = checkpointFileCloud(checkpointingAttributes.file)
     List(
       "/bin/sh",
       "-xc",
@@ -35,7 +36,7 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
         s"while true; do " +
         s"gsutil -m cp $local $cloud-tmp && " +
         s"gsutil -m mv $cloud-tmp $cloud && " +
-        "sleep 600; done"
+        s"sleep ${checkpointingAttributes.interval.toSeconds}; done"
     )
   }
 }

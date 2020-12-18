@@ -8,14 +8,14 @@ trait CheckpointingAction {
   def checkpointingSetupActions(createPipelineParameters: CreatePipelineParameters,
                                 mounts: List[Mount]
                             ): List[Action] =
-    createPipelineParameters.runtimeAttributes.checkpointFile map { checkpointFile =>
+    createPipelineParameters.runtimeAttributes.checkpointingAttributes map { checkpointing =>
       val checkpointingImage = LifeSciencesFactory.CloudSdkImage
-      val checkpointingCommand = createPipelineParameters.checkpointingConfiguration.checkpointingCommand(checkpointFile)
+      val checkpointingCommand = createPipelineParameters.checkpointingConfiguration.checkpointingCommand(checkpointing)
       val checkpointingEnvironment = Map.empty[String, String]
 
 
       val initialCheckpointSyncAction = ActionBuilder.cloudSdkShellAction(
-        createPipelineParameters.checkpointingConfiguration.localizePreviousCheckpointCommand(checkpointFile)
+        createPipelineParameters.checkpointingConfiguration.localizePreviousCheckpointCommand(checkpointing.file)
       )(mounts = mounts)
       val describeInitialCheckpointingSyncAction = ActionBuilder.describeDocker("initial checkpointing sync", initialCheckpointSyncAction)
 
@@ -31,11 +31,11 @@ trait CheckpointingAction {
     } getOrElse(Nil)
 
   def checkpointingShutdownActions(createPipelineParameters: CreatePipelineParameters): List[Action] = {
-    createPipelineParameters.runtimeAttributes.checkpointFile map { checkpointFile =>
+    createPipelineParameters.runtimeAttributes.checkpointingAttributes map { checkpointing =>
       val terminationAction = ActionBuilder.terminateBackgroundActionsAction()
       val describeTerminationAction = ActionBuilder.describeDocker("terminate checkpointing action", terminationAction)
 
-      val deleteCheckpointAction = ActionBuilder.gcsFileDeletionAction(createPipelineParameters.checkpointingConfiguration.checkpointFileCloud(checkpointFile))
+      val deleteCheckpointAction = ActionBuilder.gcsFileDeletionAction(createPipelineParameters.checkpointingConfiguration.checkpointFileCloud(checkpointing.file))
       val describeDeleteCheckpointAction = ActionBuilder.describeDocker("remove checkpointing file", deleteCheckpointAction)
 
       List(describeTerminationAction, terminationAction, describeDeleteCheckpointAction, deleteCheckpointAction)

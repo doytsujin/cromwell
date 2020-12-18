@@ -18,6 +18,7 @@ import wom.RuntimeAttributesKeys
 import wom.format.MemorySize
 import wom.types._
 import wom.values._
+import scala.concurrent.duration._
 
 object GpuResource {
   val DefaultNvidiaDriverVersion = "418.87.00"
@@ -37,6 +38,8 @@ object GpuResource {
 
 final case class GpuResource(gpuType: GpuType, gpuCount: Int Refined Positive, nvidiaDriverVersion: String = GpuResource.DefaultNvidiaDriverVersion)
 
+final case class CheckpointingAttributes(file: String, interval: FiniteDuration)
+
 final case class PipelinesApiRuntimeAttributes(cpu: Int Refined Positive,
                                                cpuPlatform: Option[String],
                                                gpuResource: Option[GpuResource],
@@ -50,7 +53,7 @@ final case class PipelinesApiRuntimeAttributes(cpu: Int Refined Positive,
                                                continueOnReturnCode: ContinueOnReturnCode,
                                                noAddress: Boolean,
                                                googleLegacyMachineSelection: Boolean,
-                                               checkpointFile: Option[String])
+                                               checkpointingAttributes: Option[CheckpointingAttributes])
 
 object PipelinesApiRuntimeAttributes {
 
@@ -77,6 +80,9 @@ object PipelinesApiRuntimeAttributes {
 
   val CheckpointFileKey = "checkpointFile"
   private val checkpointValidationInstance = new StringRuntimeAttributesValidation(CheckpointFileKey).optional
+
+  val CheckpointIntervalKey = "checkpointInterval"
+  private val checkpointIntervalValidationInstance = new FiniteDurationAttributesValidation(CheckpointIntervalKey).withDefault(WomString("10 minutes"))
 
   private val MemoryDefaultValue = "2048 MB"
 
@@ -160,6 +166,7 @@ object PipelinesApiRuntimeAttributes {
       noAddressValidation(runtimeConfig),
       cpuPlatformValidation(runtimeConfig),
       checkpointValidationInstance,
+      checkpointIntervalValidationInstance,
       dockerValidation,
       outDirMinValidation,
       tmpDirMinValidation,
@@ -170,7 +177,11 @@ object PipelinesApiRuntimeAttributes {
   def apply(validatedRuntimeAttributes: ValidatedRuntimeAttributes, runtimeAttrsConfig: Option[Config], googleLegacyMachineSelection: Boolean = false): PipelinesApiRuntimeAttributes = {
     val cpu: Int Refined Positive = RuntimeAttributesValidation.extract(cpuValidation(runtimeAttrsConfig), validatedRuntimeAttributes)
     val cpuPlatform: Option[String] = RuntimeAttributesValidation.extractOption(cpuPlatformValidation(runtimeAttrsConfig).key, validatedRuntimeAttributes)
-    val checkpointFile: Option[String] = RuntimeAttributesValidation.extractOption(checkpointValidationInstance.key, validatedRuntimeAttributes)
+
+    val checkpointAttributes: Option[CheckpointingAttributes] =
+      RuntimeAttributesValidation.extractOption(checkpointValidationInstance.key, validatedRuntimeAttributes) map { ckpt: String =>
+        CheckpointingAttributes(ckpt, RuntimeAttributesValidation.extract(checkpointIntervalValidationInstance, validatedRuntimeAttributes))
+      }
 
     // GPU
     lazy val gpuType: Option[GpuType] = RuntimeAttributesValidation.extractOption(gpuTypeValidation(runtimeAttrsConfig).key, validatedRuntimeAttributes)
@@ -216,7 +227,7 @@ object PipelinesApiRuntimeAttributes {
       continueOnReturnCode,
       noAddress,
       googleLegacyMachineSelection,
-      checkpointFile
+      checkpointAttributes
     )
   }
 }
