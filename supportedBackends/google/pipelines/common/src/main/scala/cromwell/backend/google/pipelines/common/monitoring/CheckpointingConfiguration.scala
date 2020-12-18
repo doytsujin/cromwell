@@ -26,17 +26,42 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
     s"gsutil cp $cloud $local || touch $local"
   }
 
-  def checkpointingCommand(checkpointingAttributes: CheckpointingAttributes): List[String] = {
+  def checkpointingCommand(checkpointingAttributes: CheckpointingAttributes, multilineActionSquasher: String => String): List[String] = {
     val local = checkpointFileLocal(checkpointingAttributes.file)
     val cloud = checkpointFileCloud(checkpointingAttributes.file)
+    val checkpointUploadScript =
+      s"""touch $local
+         |while true
+         |do
+         |  # Attempt to make a local copy of the checkpoint file
+         |  echo "CHECKPOINTING: Making a local copy of $local at $local-tmp"
+         |  COPY_SUCCESS="false"
+         |  while [ "$$COPY_SUCCESS" != "true" ]
+         |  do
+         |    PRE_COPY_TIMESTAMP="$$(stat -c'%Z' $local)"
+         |    cp $local $local-tmp
+         |    if [ "$$PRE_COPY_TIMESTAMP" == "$$(stat -c'%Z' $local)" ]
+         |    then
+         |      COPY_SUCCESS="true"
+         |    else
+         |      echo "CHECKPOINTING: $local was modified while trying to make a local copy. Will retry in 10s..."
+         |      sleep 10
+         |    fi
+         |  done
+         |
+         |  # Perform the upload:
+         |  echo "CHECKPOINTING: Uploading $local-tmp to $cloud-tmp"
+         |  gsutil -m mv $local-tmp $cloud-tmp
+         |  echo "CHECKPOINTING: Moving $cloud-tmp to be the new $cloud"
+         |  gsutil -m mv $cloud-tmp $cloud
+         |  echo "CHECKPOINTING: Sleeping for ${checkpointingAttributes.interval.toString} before next checkpoint"
+         |  sleep ${checkpointingAttributes.interval.toSeconds}
+         |done""".stripMargin
+
     List(
-      "/bin/sh",
-      "-xc",
-      s"touch $local && " +
-        s"while true; do " +
-        s"gsutil -m cp $local $cloud-tmp && " +
-        s"gsutil -m mv $cloud-tmp $cloud && " +
-        s"sleep ${checkpointingAttributes.interval.toSeconds}; done"
+      "/bin/bash",
+      "-c",
+      multilineActionSquasher(checkpointUploadScript)
     )
   }
 }

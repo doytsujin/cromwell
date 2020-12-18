@@ -9,20 +9,19 @@ trait CheckpointingAction {
                                 mounts: List[Mount]
                             ): List[Action] =
     createPipelineParameters.runtimeAttributes.checkpointingAttributes map { checkpointing =>
-      val checkpointingImage = GenomicsFactory.CloudSdkImage
-      val checkpointingCommand = createPipelineParameters.checkpointingConfiguration.checkpointingCommand(checkpointing)
-      val checkpointingEnvironment = Map.empty[String, String]
 
+      // Initial sync from cloud:
       val initialCheckpointSyncAction = ActionBuilder.cloudSdkShellAction(
         createPipelineParameters.checkpointingConfiguration.localizePreviousCheckpointCommand(checkpointing.file)
       )(mounts = mounts)
       val describeInitialCheckpointingSyncAction = ActionBuilder.describeDocker("initial checkpointing sync", initialCheckpointSyncAction)
 
+      // Background upload action:
       val backgroundCheckpointingAction = ActionBuilder.backgroundAction(
-        checkpointingImage,
-        checkpointingCommand,
-        checkpointingEnvironment,
-        mounts
+        image = GenomicsFactory.CloudSdkImage,
+        command = createPipelineParameters.checkpointingConfiguration.checkpointingCommand(checkpointing, ActionCommands.multiLineCommand),
+        environment = Map.empty[String, String],
+        mounts = mounts
       )
       val describeBackgroundCheckpointingAction = ActionBuilder.describeDocker("begin checkpointing background action", backgroundCheckpointingAction)
 

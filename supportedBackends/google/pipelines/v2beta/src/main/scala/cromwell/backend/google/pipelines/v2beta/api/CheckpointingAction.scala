@@ -10,7 +10,7 @@ trait CheckpointingAction {
                             ): List[Action] =
     createPipelineParameters.runtimeAttributes.checkpointingAttributes map { checkpointing =>
       val checkpointingImage = LifeSciencesFactory.CloudSdkImage
-      val checkpointingCommand = createPipelineParameters.checkpointingConfiguration.checkpointingCommand(checkpointing)
+      val checkpointingCommand = createPipelineParameters.checkpointingConfiguration.checkpointingCommand(checkpointing, ActionCommands.multiLineBinBashCommand)
       val checkpointingEnvironment = Map.empty[String, String]
 
 
