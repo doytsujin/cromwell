@@ -34,7 +34,7 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
          |while true
          |do
          |  # Attempt to make a local copy of the checkpoint file
-         |  echo "CHECKPOINTING: Making a local copy of $local at $local-tmp"
+         |  echo "CHECKPOINTING: Making local copy of $local"
          |  COPY_SUCCESS="false"
          |  while [ "$$COPY_SUCCESS" != "true" ]
          |  do
@@ -50,9 +50,9 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
          |  done
          |
          |  # Perform the upload:
-         |  echo "CHECKPOINTING: Uploading $local-tmp to $cloud-tmp"
+         |  echo "CHECKPOINTING: Uploading new checkpoint content"
          |  gsutil -m mv $local-tmp $cloud-tmp
-         |  echo "CHECKPOINTING: Moving $cloud-tmp to be the new $cloud"
+         |  echo "CHECKPOINTING: Replacing cloud checkpoint file with new content"
          |  gsutil -m mv $cloud-tmp $cloud
          |  echo "CHECKPOINTING: Sleeping for ${checkpointingAttributes.interval.toString} before next checkpoint"
          |  sleep ${checkpointingAttributes.interval.toSeconds}
