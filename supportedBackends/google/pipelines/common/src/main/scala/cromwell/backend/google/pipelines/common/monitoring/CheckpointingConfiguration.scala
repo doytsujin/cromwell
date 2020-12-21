@@ -14,10 +14,12 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
     workflowPaths.toJobPaths(jobDescriptor.key.copy(attempt = 1), jobDescriptor.workflowDescriptor)
       .callExecutionRoot.resolve("__checkpointing").resolve(checkpointFileName).toAbsolutePath.pathAsString
   }
+  def tmpCheckpointFileCloud(checkpointFileName: String): String = checkpointFileCloud(checkpointFileName) + "-tmp"
 
   def checkpointFileLocal(checkpointFileName: String): String = {
     commandDirectory.resolve(checkpointFileName).toAbsolutePath.pathAsString
   }
+  def tmpCheckpointFileLocal(checkpointFileName: String): String = checkpointFileLocal(checkpointFileName) + "-tmp"
 
   def localizePreviousCheckpointCommand(checkpointFileName: String): String = {
     val local = checkpointFileLocal(checkpointFileName)
@@ -28,7 +30,10 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
 
   def checkpointingCommand(checkpointingAttributes: CheckpointingAttributes, multilineActionSquasher: String => String): List[String] = {
     val local = checkpointFileLocal(checkpointingAttributes.file)
+    val localTmp = tmpCheckpointFileLocal(checkpointingAttributes.file)
     val cloud = checkpointFileCloud(checkpointingAttributes.file)
+    val cloudTmp = tmpCheckpointFileCloud(checkpointingAttributes.file)
+
     val checkpointUploadScript =
       s"""touch $local
          |while true
@@ -39,7 +44,7 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
          |  while [ "$$COPY_SUCCESS" != "true" ]
          |  do
          |    PRE_COPY_TIMESTAMP="$$(stat -c'%Z' $local)"
-         |    cp $local $local-tmp
+         |    cp $local $localTmp
          |    if [ "$$PRE_COPY_TIMESTAMP" == "$$(stat -c'%Z' $local)" ]
          |    then
          |      COPY_SUCCESS="true"
@@ -51,9 +56,9 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
          |
          |  # Perform the upload:
          |  echo "CHECKPOINTING: Uploading new checkpoint content"
-         |  gsutil -m mv $local-tmp $cloud-tmp
+         |  gsutil -m mv $localTmp $cloudTmp
          |  echo "CHECKPOINTING: Replacing cloud checkpoint file with new content"
-         |  gsutil -m mv $cloud-tmp $cloud
+         |  gsutil -m mv $cloudTmp $cloud
          |  echo "CHECKPOINTING: Sleeping for ${checkpointingAttributes.interval.toString} before next checkpoint"
          |  sleep ${checkpointingAttributes.interval.toSeconds}
          |done""".stripMargin

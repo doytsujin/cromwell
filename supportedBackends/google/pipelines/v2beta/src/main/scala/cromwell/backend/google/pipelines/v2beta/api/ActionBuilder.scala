@@ -100,7 +100,9 @@ object ActionBuilder {
       .setPidNamespace(backgroundActionPidNamespace)
 
   def gcsFileDeletionAction(cloudPath: String): Action =
-    cloudSdkShellAction(s"gsutil rm $cloudPath")(labels = Map(Key.Tag -> Value.Monitoring))
+    cloudSdkShellAction(
+      s"""gsutil rm '$cloudPath'"""
+    )(labels = Map(Key.Tag -> Value.Monitoring))
       .withIgnoreExitStatus(true)
 
   def userAction(docker: String,

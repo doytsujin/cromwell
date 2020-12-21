@@ -9,6 +9,9 @@ trait CheckpointingAction {
                                 mounts: List[Mount]
                             ): List[Action] =
     createPipelineParameters.runtimeAttributes.checkpointingAttributes map { checkpointing =>
+      val checkpointingImage = GenomicsFactory.CloudSdkImage
+      val checkpointingCommand = createPipelineParameters.checkpointingConfiguration.checkpointingCommand(checkpointing, ActionCommands.multiLineBinBashCommand)
+      val checkpointingEnvironment = Map.empty[String, String]
 
       // Initial sync from cloud:
       val initialCheckpointSyncAction = ActionBuilder.cloudSdkShellAction(
@@ -18,9 +21,9 @@ trait CheckpointingAction {
 
       // Background upload action:
       val backgroundCheckpointingAction = ActionBuilder.backgroundAction(
-        image = GenomicsFactory.CloudSdkImage,
-        command = createPipelineParameters.checkpointingConfiguration.checkpointingCommand(checkpointing, ActionCommands.multiLineCommand),
-        environment = Map.empty[String, String],
+        image = checkpointingImage,
+        command = checkpointingCommand,
+        environment = checkpointingEnvironment,
         mounts = mounts
       )
       val describeBackgroundCheckpointingAction = ActionBuilder.describeDocker("begin checkpointing background action", backgroundCheckpointingAction)
@@ -34,8 +37,8 @@ trait CheckpointingAction {
       val describeTerminationAction = ActionBuilder.describeDocker("terminate checkpointing action", terminationAction)
 
       val deleteCheckpointAction = ActionBuilder.gcsFileDeletionAction(createPipelineParameters.checkpointingConfiguration.checkpointFileCloud(checkpointing.file))
-      val describeDeleteCheckpointAction = ActionBuilder.describeDocker("remove checkpointing file", deleteCheckpointAction)
+      val deleteTmpCheckpointAction = ActionBuilder.gcsFileDeletionAction(createPipelineParameters.checkpointingConfiguration.tmpCheckpointFileCloud(checkpointing.file))
 
-      List(describeTerminationAction, terminationAction, describeDeleteCheckpointAction, deleteCheckpointAction)
+      List(describeTerminationAction, terminationAction, deleteCheckpointAction, deleteTmpCheckpointAction)
     } getOrElse(Nil)
 }
