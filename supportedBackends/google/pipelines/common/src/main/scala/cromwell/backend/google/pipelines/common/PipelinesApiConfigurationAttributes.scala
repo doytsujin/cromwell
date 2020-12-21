@@ -46,7 +46,8 @@ case class PipelinesApiConfigurationAttributes(project: String,
                                                batchRequestTimeoutConfiguration: BatchRequestTimeoutConfiguration,
                                                memoryRetryConfiguration: Option[MemoryRetryConfiguration],
                                                allowNoAddress: Boolean,
-                                               referenceFilesMapping: PipelinesApiReferenceFilesMapping)
+                                               referenceFilesMapping: PipelinesApiReferenceFilesMapping,
+                                               checkpointingInterval: FiniteDuration)
 
 object PipelinesApiConfigurationAttributes {
 
@@ -213,6 +214,8 @@ object PipelinesApiConfigurationAttributes {
 
     val referenceDiskLocalizationManifestFiles: ErrorOr[Option[List[ValidFullGcsPath]]] = validateGcsPathToManifestFile(backendConfig)
 
+    val checkpointingInterval: FiniteDuration = backendConfig.getOrElse("checkpointing-interval", 10.minutes)
+
     def authGoogleConfigForPapiConfigurationAttributes(project: String,
                                                        bucket: String,
                                                        endpointUrl: URL,
@@ -253,7 +256,8 @@ object PipelinesApiConfigurationAttributes {
             batchRequestTimeoutConfiguration = batchRequestTimeoutConfiguration,
             memoryRetryConfiguration = memoryRetryConfig,
             allowNoAddress,
-            referenceFilesMapping = generatedReferenceFilesMapping
+            referenceFilesMapping = generatedReferenceFilesMapping,
+            checkpointingInterval = checkpointingInterval
           )
     }
 

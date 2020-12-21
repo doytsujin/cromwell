@@ -60,7 +60,6 @@ task count {
     docker: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
     preemptible: 3
     checkpointFile: "my_checkpoint"
-    checkpointInterval: "10 seconds"
   }
 
   output {

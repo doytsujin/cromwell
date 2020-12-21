@@ -1,13 +1,15 @@
 package cromwell.backend.google.pipelines.common.monitoring
 
 import cromwell.backend.BackendJobDescriptor
-import cromwell.backend.google.pipelines.common.CheckpointingAttributes
 import cromwell.backend.io.WorkflowPaths
 import cromwell.core.path.Path
 
+import scala.concurrent.duration.FiniteDuration
+
 final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
                                        workflowPaths: WorkflowPaths,
-                                       commandDirectory: Path
+                                       commandDirectory: Path,
+                                       checkpointInterval: FiniteDuration
                                       ) {
   def checkpointFileCloud(checkpointFileName: String): String = {
     // Fix the attempt at 1 because we always use the base directory to store the checkpoint file.
@@ -28,11 +30,11 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
     s"gsutil cp $cloud $local || touch $local"
   }
 
-  def checkpointingCommand(checkpointingAttributes: CheckpointingAttributes, multilineActionSquasher: String => String): List[String] = {
-    val local = checkpointFileLocal(checkpointingAttributes.file)
-    val localTmp = tmpCheckpointFileLocal(checkpointingAttributes.file)
-    val cloud = checkpointFileCloud(checkpointingAttributes.file)
-    val cloudTmp = tmpCheckpointFileCloud(checkpointingAttributes.file)
+  def checkpointingCommand(checkpointFilename: String, multilineActionSquasher: String => String): List[String] = {
+    val local = checkpointFileLocal(checkpointFilename)
+    val localTmp = tmpCheckpointFileLocal(checkpointFilename)
+    val cloud = checkpointFileCloud(checkpointFilename)
+    val cloudTmp = tmpCheckpointFileCloud(checkpointFilename)
 
     val checkpointUploadScript =
       s"""touch $local
@@ -59,8 +61,8 @@ final class CheckpointingConfiguration(jobDescriptor: BackendJobDescriptor,
          |  gsutil -m mv $localTmp $cloudTmp
          |  echo "CHECKPOINTING: Replacing cloud checkpoint file with new content"
          |  gsutil -m mv $cloudTmp $cloud
-         |  echo "CHECKPOINTING: Sleeping for ${checkpointingAttributes.interval.toString} before next checkpoint"
-         |  sleep ${checkpointingAttributes.interval.toSeconds}
+         |  echo "CHECKPOINTING: Sleeping for ${checkpointInterval.toString} before next checkpoint"
+         |  sleep ${checkpointInterval.toSeconds}
          |done""".stripMargin
 
     List(
